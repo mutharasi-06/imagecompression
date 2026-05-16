@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Your image has been successfully compressed using Huffman Coding. Preview and download your image." />
+  <title>HuffPress – Compression Successful</title>
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <!-- Google Fonts – Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Shared Styles -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    /* ── Confetti canvas ── */
+    .confetti-canvas {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none; z-index: 999;
+    }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: .8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--gray-400); margin-bottom: .75rem;
+    }
+
+    /* ── Algorithm tag ── */
+    .algo-tag {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: linear-gradient(135deg, rgba(79,70,229,.1), rgba(124,58,237,.1));
+      border: 1px solid rgba(79,70,229,.2); border-radius: 8px;
+      font-size: .78rem; font-weight: 600; color: var(--primary);
+      padding: .35rem .85rem; width: fit-content; margin: 0 auto 1.2rem;
+    }
+    .algo-tag i { font-size: .75rem; }
+
+    /* ── Stat value animation ── */
+    @keyframes countUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .stat-value { animation: countUp .5s ease both; }
+
+    /* ── Image Preview Section ── */
+    .img-preview-section {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      position: relative;
+      animation: statFadeIn .6s ease .2s both;
+    }
+
+    .img-preview-section img {
+      width: 100%;
+      max-height: 320px;
+      object-fit: contain;
+      display: block;
+      background: repeating-conic-gradient(#e2e8f0 0% 25%, white 0% 50%) 0 0 / 16px 16px;
+    }
+
+    .img-preview-section .img-loading-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: .6rem;
+      background: var(--gray-100);
+      color: var(--gray-400);
+      font-size: .85rem; font-weight: 500;
+      transition: opacity .4s ease;
+    }
+
+    .img-preview-section .img-loading-overlay.hidden {
+      opacity: 0; pointer-events: none;
+    }
+
+    .img-preview-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .6rem 1rem;
+      background: white; border-top: 1px solid var(--gray-200);
+    }
+
+    .img-preview-name {
+      font-size: .78rem; font-weight: 600;
+      color: var(--gray-600);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 60%;
+    }
+
+    .img-preview-badge {
+      font-size: .7rem; font-weight: 700;
+      background: var(--success-light); color: #065f46;
+      padding: .2rem .65rem; border-radius: 99px;
+    }
+
+    /* ── Info card ── */
+    .info-card {
+      background: var(--gray-50); border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md); padding: 1rem 1.2rem;
+      margin-bottom: .6rem; display: flex; align-items: center;
+      gap: .85rem; transition: var(--transition);
+    }
+    .info-card:hover {
+      border-color: rgba(79,70,229,.25);
+      box-shadow: 0 3px 14px rgba(79,70,229,.08);
+      transform: translateX(3px);
+    }
+    .info-card-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: .9rem;
+    }
+    .info-card-icon.blue   { background: rgba(79,70,229,.1);  color: var(--primary); }
+    .info-card-icon.green  { background: rgba(16,185,129,.1); color: var(--success); }
+    .info-card-icon.yellow { background: rgba(245,158,11,.1); color: var(--warning); }
+    .info-card-label {
+      font-size: .72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--gray-400);
+    }
+    .info-card-value {
+      font-size: .92rem; font-weight: 700;
+      color: var(--gray-900); word-break: break-all;
+    }
+
+    /* ── Action buttons ── */
+    .action-group { display: flex; flex-direction: column; gap: .75rem; }
+
+    /* Download Image button (primary green) */
+    .btn-download-img {
+      width: 100%;
+      background: linear-gradient(135deg, var(--success), #059669);
+      border: none; border-radius: var(--radius-md);
+      color: var(--white); font-family: 'Poppins', sans-serif;
+      font-size: 1rem; font-weight: 600; padding: .9rem 2rem;
+      cursor: pointer; position: relative; overflow: hidden;
+      transition: var(--transition);
+      box-shadow: 0 4px 20px rgba(16,185,129,.35);
+      text-decoration: none; display: flex;
+      align-items: center; justify-content: center; gap: .55rem;
+    }
+    .btn-download-img:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(16,185,129,.5);
+      color: var(--white); text-decoration: none;
+    }
+    .btn-download-img:active { transform: translateY(0); }
+
+    /* Download .huff button (outlined indigo) */
+    .btn-download-huff {
+      width: 100%;
+      background: transparent;
+      border: 2px solid rgba(79,70,229,.3);
+      border-radius: var(--radius-md);
+      color: var(--primary); font-family: 'Poppins', sans-serif;
+      font-size: .9rem; font-weight: 600; padding: .75rem 2rem;
+      cursor: pointer; transition: var(--transition);
+      text-decoration: none; display: flex;
+      align-items: center; justify-content: center; gap: .5rem;
+    }
+    .btn-download-huff:hover {
+      background: rgba(79,70,229,.06);
+      border-color: var(--primary); color: var(--primary);
+      transform: translateY(-1px); text-decoration: none;
+    }
+
+    /* Savings label */
+    .savings-label {
+      font-size: .78rem; font-weight: 600; color: var(--success);
+      display: flex; align-items: center; gap: .3rem; margin-top: .4rem;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas class="confetti-canvas" id="confettiCanvas" aria-hidden="true"></canvas>
+
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="particles" id="particles" aria-hidden="true"></div>
+
+  <div class="page-wrapper">
+
+    <!-- Brand Header -->
+    <header class="brand-header">
+      <div class="brand-logo">
+        <i class="fa-solid fa-bolt-lightning"></i>
+      </div>
+      <h1 class="brand-title">HuffPress</h1>
+      <p class="brand-subtitle">Compression Complete</p>
+    </header>
+
+    <!-- Main Result Card -->
+    <div class="glass-card w-100" style="max-width: 540px;" role="main">
+      <div class="card-body-custom">
+
+        <!-- ── Success Hero ── -->
+        <div class="success-hero">
+          <div class="success-icon-wrap" aria-hidden="true">
+            <i class="fa-solid fa-check"></i>
+          </div>
+          <h2 class="success-title">Compression Successful!</h2>
+          <p class="success-sub">Your image was decompressed and is ready to view &amp; download.</p>
+          <div class="algo-tag">
+            <i class="fa-solid fa-code-branch"></i>
+            Huffman Coding Algorithm
+          </div>
+        </div>
+
+        <!-- ── Decompressed Image Preview ── -->
+        <div class="section-title">
+          <i class="fa-solid fa-image me-1"></i> Compressed Image Preview
+        </div>
+
+        <div class="img-preview-section mb-3" id="imgPreviewSection">
+          <!-- Loading overlay -->
+          <div class="img-loading-overlay" id="imgLoadingOverlay">
+            <div class="spinner-border text-secondary" style="width:2rem;height:2rem;" role="status">
+              <span class="visually-hidden">Loading…</span>
+            </div>
+            <span>Loading image…</span>
+          </div>
+          <!-- The actual decompressed image served from /preview -->
+          <img id="decompressedImg"
+               src=""
+               alt="Decompressed image preview"
+               style="display:none;"
+               onload="onImgLoaded()"
+               onerror="onImgError()" />
+          <!-- Toolbar shown after image loads -->
+          <div class="img-preview-toolbar" id="imgToolbar" style="display:none;">
+            <span class="img-preview-name" id="imgPreviewName">image.jpg</span>
+            <span class="img-preview-badge" id="imgPreviewBadge">Lossless</span>
+          </div>
+        </div>
+
+        <!-- ── Stat Grid ── -->
+        <div class="stat-grid" role="region" aria-label="Compression statistics">
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="fa-solid fa-file-image"></i></div>
+            <div class="stat-value" id="statOrigSize">—</div>
+            <div class="stat-label">Original Size</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="fa-solid fa-file-zipper"></i></div>
+            <div class="stat-value" id="statCompSize">—</div>
+            <div class="stat-label">.huff Size</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon purple"><i class="fa-solid fa-percent"></i></div>
+            <div class="stat-value" id="statRatio">—</div>
+            <div class="stat-label">Compression Ratio</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon cyan"><i class="fa-solid fa-gauge-high"></i></div>
+            <div class="stat-value" id="statSaved">—</div>
+            <div class="stat-label">Space Saved</div>
+          </div>
+        </div>
+
+        <!-- ── Compression Progress Bar ── -->
+        <div class="progress-section" role="region" aria-label="Compression ratio bar">
+          <div class="progress-label">
+            <span><i class="fa-solid fa-chart-line me-1"></i>Space Savings</span>
+            <span class="progress-pct" id="ratioLabel">0%</span>
+          </div>
+          <div class="progress-bar-track" role="progressbar"
+               aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="progressTrack">
+            <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+          </div>
+          <div class="savings-label" id="savingsLabel" aria-live="polite">
+            <i class="fa-solid fa-arrow-trend-down"></i>
+            <span id="savingsText">Calculating…</span>
+          </div>
+        </div>
+
+        <hr class="section-divider" />
+
+        <!-- ── File Details ── -->
+        <div class="section-title">File Details</div>
+
+        <div class="info-card">
+          <div class="info-card-icon blue"><i class="fa-solid fa-file-image"></i></div>
+          <div>
+            <div class="info-card-label">Original File</div>
+            <div class="info-card-value" id="origFileName">—</div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-icon green"><i class="fa-solid fa-file-code"></i></div>
+          <div>
+            <div class="info-card-label">Compressed File (.huff)</div>
+            <div class="info-card-value" id="compFileName">—</div>
+          </div>
+        </div>
+
+        <div class="info-card mb-3">
+          <div class="info-card-icon yellow"><i class="fa-solid fa-clock"></i></div>
+          <div>
+            <div class="info-card-label">Processed At</div>
+            <div class="info-card-value" id="processedAt">—</div>
+          </div>
+        </div>
+
+        <hr class="section-divider" />
+
+        <!-- ── Action Buttons ── -->
+        <div class="action-group">
+
+          <!-- PRIMARY: Download the original image -->
+          <a href="#" class="btn-download-img" id="downloadImgBtn"
+             aria-label="Download image">
+            <i class="fa-solid fa-image"></i>
+            Download Image
+            <span style="font-size:.75rem;opacity:.8;font-weight:400;">(original quality)</span>
+          </a>
+
+          <!-- SECONDARY: Download the Huffman-compressed .huff binary -->
+          <a href="#" class="btn-download-huff" id="downloadHuffBtn"
+             aria-label="Download raw .huff compressed file">
+            <i class="fa-solid fa-file-zipper"></i>
+            Download .huff File
+            <span style="font-size:.75rem;opacity:.75;font-weight:400;">(compressed binary)</span>
+          </a>
+
+          <!-- Back -->
+          <a href="/" class="btn-secondary-custom" style="justify-content:center;">
+            <i class="fa-solid fa-rotate-left"></i>
+            Compress Another Image
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="footer-note">
+      &copy; 2025 HuffPress &middot; Powered by
+      <a href="https://en.wikipedia.org/wiki/Huffman_coding" target="_blank" rel="noopener">Huffman Coding</a>
+    </p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    /* ============================================================
+       HuffPress – Result Page
+       ============================================================ */
+
+    const params   = new URLSearchParams(window.location.search);
+    const huffFile = params.get('file')     || '';
+    const origFile = params.get('orig')     || '';   // original uploaded filename (in /uploads/)
+    const origName = params.get('origName') || '';   // human-readable original name
+    const origSize = parseInt(params.get('origSize') || '0', 10);
+    const compSize = parseInt(params.get('compSize') || '0', 10);
+
+    /* ── DOM refs ── */
+    const origFileNameEl    = document.getElementById('origFileName');
+    const compFileNameEl    = document.getElementById('compFileName');
+    const statOrigSize      = document.getElementById('statOrigSize');
+    const statCompSize      = document.getElementById('statCompSize');
+    const statRatio         = document.getElementById('statRatio');
+    const statSaved         = document.getElementById('statSaved');
+    const progressFill      = document.getElementById('progressFill');
+    const progressTrack     = document.getElementById('progressTrack');
+    const ratioLabel        = document.getElementById('ratioLabel');
+    const savingsText       = document.getElementById('savingsText');
+    const downloadImgBtn    = document.getElementById('downloadImgBtn');
+    const downloadHuffBtn   = document.getElementById('downloadHuffBtn');
+    const processedAt       = document.getElementById('processedAt');
+    const decompressedImg   = document.getElementById('decompressedImg');
+    const imgLoadingOverlay = document.getElementById('imgLoadingOverlay');
+    const imgPreviewName    = document.getElementById('imgPreviewName');
+    const imgPreviewBadge   = document.getElementById('imgPreviewBadge');
+    const imgToolbar        = document.getElementById('imgToolbar');
+
+    /* ── Format bytes ── */
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024, sizes = ['B','KB','MB','GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    /* ── Animate progress bar ── */
+    function animateBar(el, target) {
+      let cur = 0;
+      const step = Math.max(1, Math.floor(target / 40));
+      const t = setInterval(() => {
+        cur = Math.min(cur + step, target);
+        el.style.width = cur + '%';
+        if (cur >= target) clearInterval(t);
+      }, 30);
+    }
+
+    /* ── Image load callbacks ── */
+    function onImgLoaded() {
+      imgLoadingOverlay.classList.add('hidden');
+      decompressedImg.style.display = 'block';
+      imgToolbar.style.display = 'flex';
+    }
+
+    function onImgError() {
+      imgLoadingOverlay.innerHTML = `
+        <i class="fa-solid fa-circle-exclamation" style="font-size:1.8rem;color:#ef4444;"></i>
+        <span style="color:#ef4444;font-weight:600;">Could not load preview.<br>
+        <small style="font-weight:400;color:#94a3b8;">The server may still be starting up.</small></span>`;
+    }
+
+    /* ── Main init ── */
+    function init() {
+      /* Resolve original filename */
+      const displayOrigName = origName || (() => {
+        const base = huffFile.replace(/\.huff$/, '');
+        const dash = base.indexOf('-');
+        return dash !== -1 ? base.slice(dash + 1) : base;
+      })();
+
+      origFileNameEl.textContent = displayOrigName || '—';
+      compFileNameEl.textContent = huffFile || '—';
+      processedAt.textContent    = new Date().toLocaleString();
+      imgPreviewName.textContent = displayOrigName;
+
+      /* ───────────────────────────────────────────────────
+         Image routes:
+           • origFile  = filename in /uploads/ (passed from new server redirect)
+           • If missing, DERIVE it: huffFile = "{ts}-{name}.jpg.huff"
+                                   origFile = "{ts}-{name}.jpg"  (strip .huff)
+         This means /preview is NEVER needed for the result page.
+      ─────────────────────────────────────────────────── */
+      // Always resolve to the original uploaded file
+      const resolvedOrigFile = origFile || (huffFile ? huffFile.replace(/\.huff$/i, '') : '');
+
+      if (resolvedOrigFile) {
+        decompressedImg.src = `/image?file=${encodeURIComponent(resolvedOrigFile)}`;
+        downloadImgBtn.href = `/download-image?file=${encodeURIComponent(resolvedOrigFile)}`;
+      } else {
+        onImgError();
+        downloadImgBtn.setAttribute('aria-disabled', 'true');
+      }
+
+      // .huff download
+      if (huffFile) {
+        downloadHuffBtn.href = `/download?file=${encodeURIComponent(huffFile)}`;
+      } else {
+        downloadHuffBtn.setAttribute('aria-disabled', 'true');
+      }
+
+      /* ── Stats ── */
+      const savedBytes = Math.max(0, origSize - compSize);
+      const ratio      = origSize > 0 ? savedBytes / origSize : 0;
+      const pct        = Math.round(ratio * 100);
+
+      statOrigSize.textContent = origSize  > 0 ? formatBytes(origSize)   : '—';
+      statCompSize.textContent = compSize  > 0 ? formatBytes(compSize)   : '—';
+      statRatio.textContent    = origSize  > 0 ? pct + '%'               : '—';
+      statSaved.textContent    = savedBytes > 0 ? formatBytes(savedBytes) : '—';
+      imgPreviewBadge.textContent = origSize > 0 ? `${pct}% smaller` : 'Lossless';
+
+      setTimeout(() => {
+        progressTrack.setAttribute('aria-valuenow', pct);
+        ratioLabel.textContent  = pct + '%';
+        savingsText.textContent = savedBytes > 0
+          ? `Saved ${formatBytes(savedBytes)} — ${pct}% smaller than original`
+          : 'Compression complete.';
+        animateBar(progressFill, pct);
+      }, 300);
+    }
+
+    init();
+
+    /* ── Download Image button feedback ── */
+    downloadImgBtn.addEventListener('click', function(e) {
+      if (this.getAttribute('aria-disabled')) { e.preventDefault(); return; }
+      const orig = this.innerHTML;
+      this.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span>Preparing…`;
+      setTimeout(() => {
+        this.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>Download Started!`;
+        setTimeout(() => { this.innerHTML = orig; }, 2500);
+      }, 1200);
+    });
+
+    /* ── Download .huff button feedback ── */
+    downloadHuffBtn.addEventListener('click', function(e) {
+      if (this.getAttribute('aria-disabled')) { e.preventDefault(); return; }
+      const orig = this.innerHTML;
+      this.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span>Preparing…`;
+      setTimeout(() => {
+        this.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>Downloaded!`;
+        setTimeout(() => { this.innerHTML = orig; }, 2500);
+      }, 1000);
+    });
+
+    /* ── Confetti ── */
+    (function launchConfetti() {
+      const canvas = document.getElementById('confettiCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const COLORS = ['#4f46e5','#7c3aed','#06b6d4','#10b981','#f59e0b','#ef4444','#f472b6'];
+      const pieces = [];
+      class Piece {
+        constructor() { this.reset(true); }
+        reset(init) {
+          this.x = Math.random() * canvas.width;
+          this.y = init ? (Math.random() * canvas.height - canvas.height) : -12;
+          this.vx = (Math.random() - 0.5) * 3;
+          this.vy = Math.random() * 3 + 1.5;
+          this.r  = Math.random() * 6 + 3;
+          this.col = COLORS[Math.floor(Math.random() * COLORS.length)];
+          this.rot = Math.random() * Math.PI * 2;
+          this.rV  = (Math.random() - 0.5) * 0.15;
+          this.shape = Math.random() > 0.5 ? 'rect' : 'circle';
+        }
+        draw() {
+          ctx.save(); ctx.fillStyle = this.col;
+          ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+          if (this.shape === 'rect') ctx.fillRect(-this.r, -this.r/2, this.r*2, this.r);
+          else { ctx.beginPath(); ctx.arc(0,0,this.r/2,0,Math.PI*2); ctx.fill(); }
+          ctx.restore();
+        }
+        update() {
+          this.x += this.vx; this.y += this.vy; this.rot += this.rV;
+          if (this.y > canvas.height + 10) this.reset(false);
+        }
+      }
+      for (let i = 0; i < 110; i++) pieces.push(new Piece());
+      let frame = 0;
+      function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        pieces.forEach(p => { p.update(); p.draw(); });
+        if (++frame < 200) requestAnimationFrame(loop);
+        else {
+          let op = 1;
+          const fade = setInterval(() => {
+            op -= 0.04;
+            canvas.style.opacity = Math.max(0, op);
+            if (op <= 0) { clearInterval(fade); canvas.style.display = 'none'; }
+          }, 30);
+        }
+      }
+      loop();
+      window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+      });
+    })();
+
+    /* ── Floating particles ── */
+    (function() {
+      const c = document.getElementById('particles');
+      for (let i = 0; i < 18; i++) {
+        const p = document.createElement('div');
+        p.classList.add('particle');
+        const s = Math.random() * 4 + 2;
+        p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;
+          animation-duration:${Math.random()*12+8}s;
+          animation-delay:${Math.random()*10}s;
+          opacity:${Math.random()*.5+.2};`;
+        c.appendChild(p);
+      }
+    })();
+  </script>
+</body>
+</html>

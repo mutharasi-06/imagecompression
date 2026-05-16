@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Compress images losslessly using Huffman Coding. Upload your image and get a smaller .huff file instantly." />
+  <title>HuffPress – Image Compression using Huffman Coding</title>
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <!-- Google Fonts – Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Shared Styles -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    /* ── Page-specific extras ── */
+    .choose-btn-wrapper {
+      margin-top: 1.2rem;
+    }
+
+    .choose-btn {
+      background: white;
+      border: 2px solid rgba(79,70,229,.35);
+      border-radius: 10px;
+      color: var(--primary);
+      font-family: 'Poppins', sans-serif;
+      font-size: .85rem;
+      font-weight: 600;
+      padding: .55rem 1.4rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+    }
+
+    .choose-btn:hover {
+      background: var(--primary);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(79,70,229,.3);
+    }
+
+    /* Features bar */
+    .features-bar {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .feature-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 99px;
+      color: rgba(255,255,255,.9);
+      font-size: .78rem;
+      font-weight: 500;
+      padding: .3rem .9rem;
+      backdrop-filter: blur(8px);
+    }
+
+    .feature-chip i { font-size: .75rem; color: #a5f3fc; }
+
+    /* How-it-works strip */
+    .how-strip {
+      display: flex;
+      gap: .5rem;
+      justify-content: center;
+      align-items: center;
+      margin-top: .6rem;
+      flex-wrap: wrap;
+    }
+
+    .how-step {
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+      font-size: .78rem;
+      color: var(--gray-600);
+    }
+
+    .how-step-num {
+      width: 20px; height: 20px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: white;
+      font-size: .65rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .how-arrow { color: var(--gray-300); font-size: .7rem; }
+
+    /* Compress button loading state */
+    .btn-compress .btn-text-default { transition: var(--transition); }
+    .btn-compress .btn-text-loading { display: none; }
+    .btn-compress.loading .btn-text-default { display: none; }
+    .btn-compress.loading .btn-text-loading { display: inline-flex; align-items: center; gap: .5rem; }
+
+    /* Upload section title */
+    .section-title {
+      font-size: .8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--gray-400);
+      margin-bottom: .75rem;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Floating orb background -->
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Floating particles -->
+  <div class="particles" id="particles" aria-hidden="true"></div>
+
+  <div class="page-wrapper">
+
+    <!-- Brand Header -->
+    <header class="brand-header">
+      <div class="brand-logo">
+        <i class="fa-solid fa-bolt-lightning"></i>
+      </div>
+      <h1 class="brand-title">HuffPress</h1>
+      <p class="brand-subtitle">Image Compression using Huffman Coding</p>
+    </header>
+
+    <!-- Feature chips -->
+    <div class="features-bar" aria-label="App features">
+      <span class="feature-chip"><i class="fa-solid fa-lock"></i> Lossless</span>
+      <span class="feature-chip"><i class="fa-solid fa-bolt"></i> Fast</span>
+      <span class="feature-chip"><i class="fa-solid fa-shield-halved"></i> Secure</span>
+      <span class="feature-chip"><i class="fa-solid fa-wifi"></i> No Upload to Cloud</span>
+    </div>
+
+    <!-- Main Card -->
+    <div class="glass-card w-100" style="max-width: 520px;" role="main">
+      <div class="card-body-custom">
+
+        <!-- Subtitle -->
+        <p class="text-center mb-4" style="color: var(--gray-600); font-size: .9rem;">
+          Upload your image to compress and reduce file size using the&nbsp;
+          <strong style="color: var(--primary);">Huffman algorithm</strong>.
+        </p>
+
+        <!-- Upload Form -->
+        <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" novalidate>
+
+          <!-- Alert -->
+          <div class="alert-custom alert-error mb-3" id="fileAlert" role="alert">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="alertMsg">Please select a valid image file.</span>
+          </div>
+
+          <!-- Drop Zone -->
+          <div class="section-title">Select Image</div>
+          <div class="drop-zone" id="dropZone" role="button" tabindex="0"
+               aria-label="Drag and drop image here or click to browse">
+            <i class="fa-solid fa-cloud-arrow-up drop-icon" aria-hidden="true"></i>
+            <p class="drop-title">Drag &amp; drop your image here</p>
+            <p class="drop-sub">or click to browse files</p>
+            <div class="file-types" aria-label="Accepted file types">
+              <span class="file-type-badge">JPG</span>
+              <span class="file-type-badge">PNG</span>
+              <span class="file-type-badge">GIF</span>
+              <span class="file-type-badge">BMP</span>
+              <span class="file-type-badge">WEBP</span>
+              <span class="file-type-badge">TIFF</span>
+            </div>
+            <div class="choose-btn-wrapper">
+              <button type="button" class="choose-btn" id="chooseBtnTrigger" aria-label="Choose file">
+                <i class="fa-solid fa-folder-open"></i> Choose File
+              </button>
+            </div>
+          </div>
+
+          <!-- Hidden file input -->
+          <input type="file" id="imageInput" name="image" accept="image/*"
+                 class="d-none" required aria-label="Image file input" />
+
+          <!-- Image Preview -->
+          <div class="preview-wrap mt-3" id="previewWrap">
+            <img id="imagePreview" src="#" alt="Selected image preview" />
+            <span class="preview-badge" id="previewBadge">Preview</span>
+            <button type="button" class="preview-remove" id="removeFile"
+                    aria-label="Remove selected file" data-tooltip="Remove">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- File Info Strip -->
+          <div class="file-info-strip mt-3" id="fileInfoStrip" aria-live="polite">
+            <div class="file-info-icon">
+              <i class="fa-solid fa-image"></i>
+            </div>
+            <div class="file-info-text">
+              <div class="file-name" id="fileName">No file selected</div>
+              <div class="file-size-text" id="fileSize">—</div>
+            </div>
+            <i class="fa-solid fa-circle-check" style="color: var(--success); font-size: 1.1rem;"></i>
+          </div>
+
+          <!-- Divider -->
+          <hr class="section-divider" />
+
+          <!-- Compress Button -->
+          <button type="submit" class="btn-compress" id="compressBtn" disabled
+                  aria-label="Compress image">
+            <span class="btn-text-default">
+              <i class="fa-solid fa-bolt-lightning me-2"></i>Compress Image
+            </span>
+            <span class="btn-text-loading">
+              <span class="spinner-border" role="status" aria-hidden="true"></span>
+              Compressing&hellip;
+            </span>
+          </button>
+
+          <!-- How it works -->
+          <div class="how-strip mt-3" aria-label="Process steps">
+            <div class="how-step">
+              <div class="how-step-num">1</div>
+              <span>Upload</span>
+            </div>
+            <i class="fa-solid fa-chevron-right how-arrow"></i>
+            <div class="how-step">
+              <div class="how-step-num">2</div>
+              <span>Huffman encode</span>
+            </div>
+            <i class="fa-solid fa-chevron-right how-arrow"></i>
+            <div class="how-step">
+              <div class="how-step-num">3</div>
+              <span>Download .huff</span>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <p class="footer-note">
+      &copy; 2025 HuffPress &middot; Powered by
+      <a href="https://en.wikipedia.org/wiki/Huffman_coding" target="_blank" rel="noopener">Huffman Coding</a>
+    </p>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    /* ============================================================
+       HuffPress – Upload Page Logic
+       ============================================================ */
+
+    const dropZone      = document.getElementById('dropZone');
+    const imageInput    = document.getElementById('imageInput');
+    const compressBtn   = document.getElementById('compressBtn');
+    const fileName      = document.getElementById('fileName');
+    const fileSizeEl    = document.getElementById('fileSize');
+    const fileInfoStrip = document.getElementById('fileInfoStrip');
+    const previewWrap   = document.getElementById('previewWrap');
+    const imagePreview  = document.getElementById('imagePreview');
+    const previewBadge  = document.getElementById('previewBadge');
+    const removeFile    = document.getElementById('removeFile');
+    const fileAlert     = document.getElementById('fileAlert');
+    const alertMsg      = document.getElementById('alertMsg');
+    const uploadForm    = document.getElementById('uploadForm');
+    const chooseTrigger = document.getElementById('chooseBtnTrigger');
+
+    /* ── Utility: format bytes ── */
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    /* ── Show alert ── */
+    function showAlert(msg) {
+      alertMsg.textContent = msg;
+      fileAlert.classList.add('show');
+      setTimeout(() => fileAlert.classList.remove('show'), 4000);
+    }
+
+    /* ── Reset state ── */
+    function resetState() {
+      imageInput.value = '';
+      previewWrap.classList.remove('show');
+      fileInfoStrip.classList.remove('show');
+      compressBtn.disabled = true;
+      imagePreview.src = '#';
+    }
+
+    /* ── Handle selected file ── */
+    function handleFile(file) {
+      fileAlert.classList.remove('show');
+
+      if (!file) return;
+
+      // Validate image type
+      if (!file.type.startsWith('image/')) {
+        showAlert('Only image files are accepted (JPG, PNG, GIF, BMP, WEBP, TIFF).');
+        resetState();
+        return;
+      }
+
+      // Max 50 MB
+      if (file.size > 50 * 1024 * 1024) {
+        showAlert('File too large. Please choose an image under 50 MB.');
+        resetState();
+        return;
+      }
+
+      // Update file info strip
+      fileName.textContent = file.name;
+      fileSizeEl.textContent = formatBytes(file.size);
+      fileInfoStrip.classList.add('show');
+
+      // Image preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imagePreview.src = e.target.result;
+        previewWrap.classList.add('show');
+        previewBadge.textContent = formatBytes(file.size);
+      };
+      reader.readAsDataURL(file);
+
+      // Enable compress button
+      compressBtn.disabled = false;
+    }
+
+    /* ── File input change ── */
+    imageInput.addEventListener('change', () => {
+      if (imageInput.files[0]) handleFile(imageInput.files[0]);
+    });
+
+    /* ── Trigger file picker ── */
+    chooseTrigger.addEventListener('click', () => imageInput.click());
+    dropZone.addEventListener('click', (e) => {
+      if (e.target === chooseTrigger || chooseTrigger.contains(e.target)) return;
+      imageInput.click();
+    });
+
+    /* ── Keyboard accessibility ── */
+    dropZone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        imageInput.click();
+      }
+    });
+
+    /* ── Drag & Drop ── */
+    ['dragenter', 'dragover'].forEach(evt => {
+      dropZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(evt => {
+      dropZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+      });
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const dt = e.dataTransfer;
+      if (dt.files && dt.files[0]) {
+        // Inject file into input so the form can use it
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(dt.files[0]);
+        imageInput.files = dataTransfer.files;
+        handleFile(dt.files[0]);
+      }
+    });
+
+    /* ── Remove file ── */
+    removeFile.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetState();
+    });
+
+    /* ── Form submit – loading state ── */
+    uploadForm.addEventListener('submit', (e) => {
+      if (!imageInput.files[0]) {
+        e.preventDefault();
+        showAlert('Please select an image file before compressing.');
+        return;
+      }
+
+      compressBtn.classList.add('loading');
+      compressBtn.disabled = true;
+
+      // Ripple effect
+      createRipple(compressBtn, e);
+    });
+
+    /* ── Ripple helper ── */
+    function createRipple(btn, e) {
+      const circle = document.createElement('span');
+      const diameter = Math.max(btn.clientWidth, btn.clientHeight);
+      const radius = diameter / 2;
+      const rect = btn.getBoundingClientRect();
+      circle.style.width  = circle.style.height = `${diameter}px`;
+      circle.style.left   = `${(e.clientX - rect.left) - radius}px`;
+      circle.style.top    = `${(e.clientY - rect.top)  - radius}px`;
+      circle.classList.add('ripple');
+      const existing = btn.querySelector('.ripple');
+      if (existing) existing.remove();
+      btn.appendChild(circle);
+    }
+
+    /* ── Generate floating particles ── */
+    function spawnParticles() {
+      const container = document.getElementById('particles');
+      const count = 18;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.classList.add('particle');
+        const size = Math.random() * 4 + 2;
+        p.style.cssText = `
+          width: ${size}px;
+          height: ${size}px;
+          left: ${Math.random() * 100}%;
+          animation-duration: ${Math.random() * 12 + 8}s;
+          animation-delay: ${Math.random() * 10}s;
+          opacity: ${Math.random() * 0.5 + 0.2};
+        `;
+        container.appendChild(p);
+      }
+    }
+
+    spawnParticles();
+  </script>
+</body>
+</html>
